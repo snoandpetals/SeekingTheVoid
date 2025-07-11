@@ -1,0 +1,53 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>netstandard2.1</TargetFramework>
+		<LangVersion>preview</LangVersion>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <None Remove="seekingthevoid_assets" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <EmbeddedResource Include="seekingthevoid_assets" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="BepInEx.Analyzers" Version="1.0.*">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+
+		<PackageReference Include="BepInEx.Core" Version="5.4.21" />
+
+		<PackageReference Include="UnityEngine.Modules" Version="2021.3.33" IncludeAssets="compile" />
+		<PackageReference Include="RiskOfRain2.GameLibs" Version="1.3.9-r.0" />
+	</ItemGroup>
+	
+	  <ItemGroup>
+		<Reference Include="MMHOOK_RoR2">
+		  <HintPath>..\..\..\AppData\Roaming\r2modmanPlus-local\RiskOfRain2\profiles\EternalRain-I.Updated\BepInEx\plugins\MMHOOK\MMHOOK_RoR2.dll</HintPath>
+		</Reference>
+		<Reference Include="R2API.ArtifactCode">
+		  <HintPath>..\..\..\AppData\Roaming\r2modmanPlus-local\RiskOfRain2\profiles\EternalRain-I.Updated\BepInEx\plugins\RiskofThunder-R2API_ArtifactCode\R2API.ArtifactCode\R2API.ArtifactCode.dll</HintPath>
+		</Reference>
+		<Reference Include="R2API.ContentManagement">
+		  <HintPath>..\..\..\AppData\Roaming\r2modmanPlus-local\RiskOfRain2\profiles\EternalRain-I.Updated\BepInEx\plugins\RiskofThunder-R2API_ContentManagement\R2API.ContentManagement\R2API.ContentManagement.dll</HintPath>
+		</Reference>
+		<Reference Include="R2API.Core">
+		  <HintPath>..\..\..\AppData\Roaming\r2modmanPlus-local\RiskOfRain2\profiles\EternalRain-I.Updated\BepInEx\plugins\RiskofThunder-R2API_Core\R2API.Core\R2API.Core.dll</HintPath>
+		</Reference>
+		<Reference Include="R2API.Items">
+		  <HintPath>..\..\..\AppData\Roaming\r2modmanPlus-local\RiskOfRain2\profiles\EternalRain-I.Updated\BepInEx\plugins\RiskofThunder-R2API_Items\R2API.Items\R2API.Items.dll</HintPath>
+		</Reference>
+		<Reference Include="R2API.Language">
+		  <HintPath>..\..\..\AppData\Roaming\r2modmanPlus-local\RiskOfRain2\profiles\EternalRain-I.Updated\BepInEx\plugins\RiskofThunder-R2API_Language\R2API.Language\R2API.Language.dll</HintPath>
+		</Reference>
+		<Reference Include="VoidItemAPI">
+		  <HintPath>..\VoidItemAPI.dll</HintPath>
+		</Reference>
+  </ItemGroup>
+
+</Project>
