@@ -1,24 +1,29 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 using BepInEx;
 using R2API;
 using RoR2;
+using RoR2.ExpansionManagement;
 using RoR2.Items;
 using RoR2.Navigation;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Security;
+using System.Security.Permissions;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.Networking;
 using UnityEngine.UIElements;
-using VoidItemAPI;
 
 [assembly: HG.Reflection.SearchableAttribute.OptIn]
-
+[module: UnverifiableCode]
+#pragma warning disable CS0618 //Type or member is obsolete
+[assembly: SecurityPermission(SecurityAction.RequestMinimum, SkipVerification = true)]
+#pragma warning disable CS0618 //Type or member is obsolete
 namespace SeekingTheVoid
 {
-    [BepInDependency(VoidItemAPI.VoidItemAPI.MODGUID)]
     [BepInDependency(ItemAPI.PluginGUID)]
     [BepInDependency(LanguageAPI.PluginGUID)]
     // This attribute is required, and lists metadata for your plugin.
@@ -36,8 +41,10 @@ namespace SeekingTheVoid
         public const string PluginVersion = "1.0.0";
 
         // We need our item definition to persist through our functions, and therefore make it a class field.
-        private static ItemDef CoastalCoralDef;
+        public static ItemDef CoastalCoralDef;
         public static AssetBundle SeekingTheVoidAssets;
+        public static ExpansionDef GetExpansionDef;
+
 
         protected void CreateLang()
         {
@@ -57,8 +64,8 @@ namespace SeekingTheVoid
             {
                 SeekingTheVoidAssets = AssetBundle.LoadFromStream(stream);
             }
-
             CoastalCoralDef = ScriptableObject.CreateInstance<ItemDef>();
+            CoastalCoralDef.requiredExpansion = Addressables.LoadAssetAsync<ExpansionDef>("RoR2/DLC1/Common/DLC1.asset").WaitForCompletion();
 
             // Language Tokens, explained there https://risk-of-thunder.github.io/R2Wiki/Mod-Creation/Assets/Localization/
             CoastalCoralDef.name = "SEEKINTHEVOID_COASTALCORAL_NAME";
@@ -68,7 +75,7 @@ namespace SeekingTheVoid
             CoastalCoralDef.loreToken = "SEEKINTHEVOID_COASTALCORAL_LORE";
 
             CoastalCoralDef._itemTierDef = Addressables.LoadAssetAsync<ItemTierDef>("RoR2/DLC1/Common/VoidTier1Def.asset").WaitForCompletion();
-            
+
             // You can create your own icons and prefabs through assetbundles, but to keep this boilerplate brief, we'll be using question marks.
             CoastalCoralDef.pickupIconSprite = SeekingTheVoidAssets.LoadAsset<Sprite>("CoastalCoral.png");
             CoastalCoralDef.pickupModelPrefab = SeekingTheVoidAssets.LoadAsset<GameObject>("CoastalCoral.prefab");
@@ -237,18 +244,21 @@ namespace SeekingTheVoid
             // Then finally add it to R2API
             ItemAPI.Add(new CustomItem(CoastalCoralDef, displayRules));
 
-            On.RoR2.ItemCatalog.Init += AddVoidTransformation;
-        }
-
-        private void AddVoidTransformation(On.RoR2.ItemCatalog.orig_Init orig)
-        {
-            orig();
-
             ItemDef ElusiveAntlersItemDef = Addressables.LoadAssetAsync<ItemDef>("RoR2/DLC2/Items/SpeedBoostPickup/SpeedBoostPickup.asset").WaitForCompletion();
-            VoidItemAPI.VoidTransformation.CreateTransformation(CoastalCoralDef, ElusiveAntlersItemDef);
+            var provider = ScriptableObject.CreateInstance<ItemRelationshipProvider>();
+            provider.name = "CoastalCoralContagiousItemProvider";
+            provider.relationshipType = Addressables.LoadAssetAsync<ItemRelationshipType>("RoR2/DLC1/Common/ContagiousItem.asset").WaitForCompletion();
+            provider.relationships =
+            [   
+                new ItemDef.Pair
+                {
+                    itemDef1 = ElusiveAntlersItemDef,
+                    itemDef2 = CoastalCoralDef
+                }
+            ];
+            R2API.ContentAddition.AddItemRelationshipProvider(provider);
         }
-
-
+      
         // The Update() method is run on every frame of the game.
         private void Update()
         {
@@ -273,7 +283,7 @@ namespace SeekingTheVoid
             private int GetStackCount() { return stack; }
 
             private float internalTimer = 10f;
-            
+
 
             private void OnEnable()
             {
@@ -285,7 +295,8 @@ namespace SeekingTheVoid
 
             public void FixedUpdate()
             {
-                if (NetworkServer.active && (bool)body && stack > 0) {
+                if (NetworkServer.active && (bool)body && stack > 0)
+                {
                     internalTimer -= Time.fixedDeltaTime;
                     if (internalTimer <= 0)
                     {
@@ -310,20 +321,33 @@ namespace SeekingTheVoid
                 NodeGraph.NodeIndex nodeIndex = groundNodes.FindClosestNode(position, HullClassification.Human);
                 if (groundNodes.GetNodePosition(nodeIndex, out position))
                 {
+                    Vector3 newPos = position;
+                    newPos.y += UnityEngine.Random.Range(7, 15f);
                     float num2 = HullDef.Find(HullClassification.Human).radius * 0.7f;
-                    if (!HGPhysics.DoesOverlapSphere(position + Vector3.up * (num2 + 0.25f), num2, (int)LayerIndex.world.mask | (int)LayerIndex.defaultLayer.mask | (int)LayerIndex.CommonMasks.fakeActorLayers | (int)LayerIndex.entityPrecise.mask | (int)LayerIndex.debris.mask))
+                    if (!HGPhysics.DoesOverlapSphere(newPos + (Vector3.up * (num2 + 0.25f)), num2, (int)LayerIndex.world.mask | (int)LayerIndex.defaultLayer.mask | (int)LayerIndex.CommonMasks.fakeActorLayers | (int)LayerIndex.entityPrecise.mask | (int)LayerIndex.debris.mask))
                     {
-                        SpawnShit(position);
+                        SpawnShit(newPos);
                     }
                 }
             }
 
-            public void SpawnShit(Vector3 position)
+            public void SpawnShit(Vector3 newPos)
             {
-                GameObject gameObject = Instantiate(Addressables.LoadAssetAsync<GameObject>("RoR2/DLC2/FalseSon/FalseSonBody.prefab").WaitForCompletion(), position, Quaternion.identity);
+                GameObject gameObject = Instantiate(Addressables.LoadAssetAsync<GameObject>("RoR2/DLC2/Items/SpeedBoostPickup/ElusiveAntlersPickup.prefab").WaitForCompletion(), newPos, Quaternion.identity);
+                ElusiveAntlersPickup component = gameObject.GetComponent<ElusiveAntlersPickup>();
+                component.ownerBody = this.body;
+                component.baseBarrierAmount = 0f;
+                component.additionalBarrierAmountPerAdditionalItemStack = 0f;
+                component.shardPickupBuffTimeSeconds = 12f;
+                component.despawnMinAge = 60f;
+                component.maxDistanceFromOwner = 120f;
                 NetworkServer.Spawn(gameObject);
+                EffectData effectData = new EffectData();
+                effectData.origin = newPos;
+                effectData.SetNetworkedObjectReference(gameObject);
+                EffectManager.SpawnEffect(CharacterBody.AssetReferences.shardSpawnEffectPrefab, effectData, transmit: true);
             }
-
+            
         }
     }
 }
