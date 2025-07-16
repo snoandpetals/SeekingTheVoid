@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using BepInEx;
 using R2API;
 using RoR2;
+using RoR2.ExpansionManagement;
 using RoR2.Items;
 using RoR2.Navigation;
 using UnityEngine;
@@ -13,6 +14,7 @@ using UnityEngine.AddressableAssets;
 using UnityEngine.Networking;
 using UnityEngine.UIElements;
 using VoidItemAPI;
+using ShaderSwapper;
 
 [assembly: HG.Reflection.SearchableAttribute.OptIn]
 
@@ -58,6 +60,9 @@ namespace SeekingTheVoid
                 SeekingTheVoidAssets = AssetBundle.LoadFromStream(stream);
             }
 
+            // Upgrade Shaders :3
+            base.StartCoroutine(SeekingTheVoidAssets.UpgradeStubbedShadersAsync());
+
             CoastalCoralDef = ScriptableObject.CreateInstance<ItemDef>();
 
             // Language Tokens, explained there https://risk-of-thunder.github.io/R2Wiki/Mod-Creation/Assets/Localization/
@@ -68,7 +73,9 @@ namespace SeekingTheVoid
             CoastalCoralDef.loreToken = "SEEKINTHEVOID_COASTALCORAL_LORE";
 
             CoastalCoralDef._itemTierDef = Addressables.LoadAssetAsync<ItemTierDef>("RoR2/DLC1/Common/VoidTier1Def.asset").WaitForCompletion();
-            
+
+            CoastalCoralDef.requiredExpansion = Addressables.LoadAssetAsync<ExpansionDef>("RoR2/DLC1/Common/DLC1.asset").WaitForCompletion();
+
             // You can create your own icons and prefabs through assetbundles, but to keep this boilerplate brief, we'll be using question marks.
             CoastalCoralDef.pickupIconSprite = SeekingTheVoidAssets.LoadAsset<Sprite>("CoastalCoral.png");
             CoastalCoralDef.pickupModelPrefab = SeekingTheVoidAssets.LoadAsset<GameObject>("CoastalCoral.prefab");
@@ -265,7 +272,10 @@ namespace SeekingTheVoid
             }
         }
 
-
+        // TODO
+        // MAKE THIS INTO A NETWORK BEHAVIOUR
+        // HAVE THE SCRIPT BE ATTACHED TO THE BODY ON INVENTORY UPDATE
+        // THEN MAKE THIS NETWORKED! YOU MORON!
         public class CoastalCoralBehavior : BaseItemBodyBehavior
         {
             [ItemDefAssociation(useOnServer = true, useOnClient = false)]
@@ -310,12 +320,19 @@ namespace SeekingTheVoid
                 NodeGraph.NodeIndex nodeIndex = groundNodes.FindClosestNode(position, HullClassification.Human);
                 if (groundNodes.GetNodePosition(nodeIndex, out position))
                 {
+                    //i think changing it here would work
                     float num2 = HullDef.Find(HullClassification.Human).radius * 0.7f;
                     if (!HGPhysics.DoesOverlapSphere(position + Vector3.up * (num2 + 0.25f), num2, (int)LayerIndex.world.mask | (int)LayerIndex.defaultLayer.mask | (int)LayerIndex.CommonMasks.fakeActorLayers | (int)LayerIndex.entityPrecise.mask | (int)LayerIndex.debris.mask))
                     {
                         SpawnShit(position);
                     }
                 }
+
+                //DirectorCore.instance.TrySpawnObject(new DirectorSpawnRequest(VoidCampSpawnCard, new DirectorPlacementRule
+                //{
+                //    placementMode = DirectorPlacementRule.PlacementMode.NearestNode,
+                //    position = position
+                //}, rng));
             }
 
             public void SpawnShit(Vector3 position)

@@ -45,6 +45,9 @@
 		<Reference Include="R2API.Language">
 		  <HintPath>..\..\..\AppData\Roaming\r2modmanPlus-local\RiskOfRain2\profiles\EternalRain-I.Updated\BepInEx\plugins\RiskofThunder-R2API_Language\R2API.Language\R2API.Language.dll</HintPath>
 		</Reference>
+		<Reference Include="ShaderSwapper">
+		  <HintPath>..\..\..\AppData\Roaming\r2modmanPlus-local\RiskOfRain2\profiles\test\BepInEx\plugins\Smooth_Salad-ShaderSwapper\ShaderSwapper.dll</HintPath>
+		</Reference>
 		<Reference Include="VoidItemAPI">
 		  <HintPath>..\VoidItemAPI.dll</HintPath>
 		</Reference>
